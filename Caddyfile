@@ -29,8 +29,12 @@
 			-Server
 		}
 
+		# Go's built-in MIME table has no woff2, so the type would depend on
+		# whether the host image happens to ship /etc/mime.types.
+		@woff2 path *.woff2
+		header @woff2 Content-Type font/woff2
+
 		root * .
-		try_files {path} /index.html
 		file_server {
 			hide .git
 			hide .gitignore
@@ -38,5 +42,15 @@
 			hide railway.toml
 			hide README.md
 		}
+	}
+
+	# Old WordPress URLs (/docs, /blog, downloads, every indexed post)
+	# send their visitors to the notice instead of answering 200 with a
+	# copy of it, so search engines drop them rather than treating the
+	# site as thousands of duplicates.
+	handle_errors {
+		@notfound expression {err.status_code} == 404
+		redir @notfound / 301
+		respond "{err.status_code} {err.status_text}" {err.status_code}
 	}
 }
